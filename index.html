@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organizador de Treino - Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            max-width: 430px; 
+            margin: auto; 
+            background-color: #f4f4f9;
+        }
+        
+        .formulario { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            margin-bottom: 30px; 
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .grupo-titulo {
+            margin-bottom: 10px;
+            border-bottom: 2px dashed #ccc;
+            padding-bottom: 15px;
+        }
+        
+        input, select, button { 
+            padding: 12px; 
+            font-size: 16px; 
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        input#input-titulo {
+            border: 2px solid #007bff;
+            font-weight: bold;
+            color: #333;
+        }
+
+        button.add-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* --- ÁREA DA FOTO --- */
+        #cartao-treino { 
+            background: #111; 
+            color: #fff;
+            padding: 25px; 
+            border-radius: 12px; 
+            min-height: 150px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .titulo-treino {
+            text-align: center;
+            margin-top: 0;
+            color: #00ff88; 
+            border-bottom: 2px solid #222;
+            padding-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            word-wrap: break-word;
+        }
+
+        .exercicio-item { 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #222;
+        }
+
+        .info-exercicio {
+            flex-grow: 1;
+        }
+
+        .info-exercicio strong {
+            font-size: 16px;
+            color: #fff;
+        }
+
+        .info-exercicio p {
+            margin: 4px 0 0 0;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .controles {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-controle {
+            background: #222;
+            border: none;
+            color: #fff;
+            padding: 6px 10px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: auto;
+        }
+
+        .btn-controle.btn-remover {
+            background: #dc3545;
+        }
+
+        button#btn-gerar { 
+            background-color: #00ff88; 
+            color: #111; 
+            border: none; 
+            margin-top: 20px; 
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer; 
+        }
+    </style>
+</head>
+<body>
+
+    <h3>Montar Treino</h3>
+    <div class="formulario">
+        
+        <div class="grupo-titulo">
+            <label for="input-titulo" style="font-size: 14px; color: #555; font-weight: bold;">Título do Treino:</label>
+            <input type="text" id="input-titulo" value="Treino do Dia" oninput="atualizarTitulo()" placeholder="Ex: Treino A - Peito e Tríceps">
+        </div>
+
+        <select id="nome-exercicio">
+            <option value="">Selecione o exercício...</option>
+        </select>
+        
+        <button class="btn-controle" style="background-color: #555; margin-top: -5px; margin-bottom: 10px; width: 100%;" onclick="mostrarEsconderCadastro()">+ Criar Novo Exercício</button>
+        
+        <div id="area-cadastro-exercicio" style="display: none; background: #eee; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+            <input type="text" id="novo-ex-nome" placeholder="Nome do Exercício (Ex: Voador)" style="margin-bottom: 8px;">
+            <select id="novo-ex-grupo" style="margin-bottom: 8px;">
+                <option value="Peito">Peito</option>
+                <option value="Costas">Costas</option>
+                <option value="Pernas">Pernas</option>
+                <option value="Braços/Ombros">Braços/Ombros</option>
+                <option value="Outros">Outros</option>
+            </select>
+            <button onclick="salvarNovoExercicio()" style="background-color: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold;">Salvar no Menu</button>
+        </div>
+        
+        <input type="text" id="series" placeholder="Séries x Repetições (ex: 4x 10)">
+        <input type="text" id="carga" placeholder="Carga/Peso (ex: 60kg)">
+        <button class="add-btn" onclick="adicionarAoTreino()">+ Adicionar Exercício ao Treino</button>
+    </div>
+
+    <h3>Visualização do Treino</h3>
+    <div id="cartao-treino">
+        <h2 class="titulo-treino" id="titulo-display">Treino do Dia</h2>
+        <div id="lista-exercicios">
+            </div>
+    </div>
+
+    <button id="btn-gerar" onclick="gerarImagem()">📸 Salvar como Foto</button>
+
+    <script>
+        // --- BANCO DE DADOS DE EXERCÍCIOS (EM MEMÓRIA) ---
+        let bancoDeExercicios = {
+            "Peito": ["Supino Reto", "Supino Inclinado", "Crucifixo"],
+            "Costas": ["Puxada Alta", "Remada Baixa", "Levantamento Terra"],
+            "Pernas": ["Agachamento Livre", "Leg Press 45°", "Cadeira Extensora", "Stiff"],
+            "Braços/Ombros": ["Desenvolvimento", "Elevação Lateral", "Rosca Direta", "Tríceps Corda"],
+            "Outros": []
+        };
+
+        let listaTreino = [];
+
+        // Carrega as opções assim que a página abre
+        window.onload = function() {
+            carregarOpcoesNoSelect();
+        };
+
+        // --- FUNÇÕES DO MENU DE EXERCÍCIOS ---
+        function carregarOpcoesNoSelect() {
+            const select = document.getElementById('nome-exercicio');
+            select.innerHTML = '<option value="">Selecione o exercício...</option>';
+
+            for (const [grupo, exercicios] of Object.entries(bancoDeExercicios)) {
+                if (exercicios.length === 0) continue; 
+
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = grupo;
+
+                exercicios.forEach(ex => {
+                    const option = document.createElement('option');
+                    option.value = ex;
+                    option.textContent = ex;
+                    optgroup.appendChild(option);
+                });
+
+                select.appendChild(optgroup);
+            }
+        }
+
+        function mostrarEsconderCadastro() {
+            const area = document.getElementById('area-cadastro-exercicio');
+            if (area.style.display === 'none') {
+                area.style.display = 'block';
+            } else {
+                area.style.display = 'none';
+            }
+        }
+
+        function salvarNovoExercicio() {
+            const nome = document.getElementById('novo-ex-nome').value;
+            const grupo = document.getElementById('novo-ex-grupo').value;
+
+            if (nome.trim() === '') {
+                alert('Digite o nome do exercício.');
+                return;
+            }
+
+            bancoDeExercicios[grupo].push(nome);
+            carregarOpcoesNoSelect();
+
+            document.getElementById('novo-ex-nome').value = '';
+            mostrarEsconderCadastro();
+            document.getElementById('nome-exercicio').value = nome;
+        }
+
+        // --- FUNÇÕES DO TREINO E INTERFACE ---
+        function atualizarTitulo() {
+            const textoDigitado = document.getElementById('input-titulo').value;
+            const tituloDisplay = document.getElementById('titulo-display');
+            
+            if(textoDigitado.trim() === '') {
+                tituloDisplay.innerText = 'TREINO SEM NOME';
+            } else {
+                tituloDisplay.innerText = textoDigitado;
+            }
+        }
+
+        function adicionarAoTreino() {
+            const selectBox = document.getElementById('nome-exercicio');
+            const nome = selectBox.value;
+            const series = document.getElementById('series').value;
+            const carga = document.getElementById('carga').value;
+
+            if (!nome || !series) {
+                alert('Por favor, selecione o exercício e defina as séries/repetições.');
+                return;
+            }
+
+            // Captura o grupo muscular baseado no optgroup selecionado
+            const grupoMuscular = selectBox.options[selectBox.selectedIndex].parentNode.label || 'Outros';
+
+            const novoExercicio = {
+                id: Date.now(),
+                nome: nome,
+                grupo: grupoMuscular, 
+                series: series,
+                carga: carga || 'Peso Corporal'
+            };
+
+            listaTreino.push(novoExercicio);
+            atualizarInterface();
+
+            document.getElementById('series').value = '';
+            document.getElementById('carga').value = '';
+            selectBox.value = '';
+        }
+
+        function removerExercicio(id) {
+            listaTreino = listaTreino.filter(item => item.id !== id);
+            atualizarInterface();
+        }
+
+        function moverItem(index, direcao) {
+            const novoIndex = index + direcao;
+            if (novoIndex < 0 || novoIndex >= listaTreino.length) return;
+
+            const temp = listaTreino[index];
+            listaTreino[index] = listaTreino[novoIndex];
+            listaTreino[novoIndex] = temp;
+
+            atualizarInterface();
+        }
+
+        function atualizarInterface() {
+            const container = document.getElementById('lista-exercicios');
+            container.innerHTML = ''; 
+
+            let grupoAtual = ''; 
+
+            listaTreino.forEach((exercicio, index) => {
+                
+                // Cria o subtítulo divisor se o grupo muscular mudar
+                if (exercicio.grupo !== grupoAtual) {
+                    const tituloGrupo = document.createElement('h4');
+                    tituloGrupo.innerText = `⚡ ${exercicio.grupo.toUpperCase()}`;
+                    
+                    tituloGrupo.style.color = '#007bff'; 
+                    tituloGrupo.style.borderBottom = '1px dashed #333';
+                    tituloGrupo.style.margin = '20px 0 5px 0';
+                    tituloGrupo.style.paddingBottom = '5px';
+                    tituloGrupo.style.letterSpacing = '1px';
+                    
+                    container.appendChild(tituloGrupo);
+                    grupoAtual = exercicio.grupo;
+                }
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'exercicio-item';
+
+                itemDiv.innerHTML = `
+                    <div class="info-exercicio">
+                        <strong>${exercicio.nome}</strong>
+                        <p>🎯 ${exercicio.series} | ⚖️ ${exercicio.carga}</p>
+                    </div>
+                    <div class="controles" data-html2canvas-ignore="true">
+                        <button class="btn-controle" onclick="moverItem(${index}, -1)">🔼</button>
+                        <button class="btn-controle" onclick="moverItem(${index}, 1)">🔽</button>
+                        <button class="btn-controle btn-remover" onclick="removerExercicio(${exercicio.id})">❌</button>
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        // --- GERAÇÃO DA FOTO ---
+        function gerarImagem() {
+            if (listaTreino.length === 0) {
+                alert('Adicione pelo menos um exercício antes de gerar a foto.');
+                return;
+            }
+
+            const cartao = document.getElementById('cartao-treino');
+            const nomeArquivo = document.getElementById('titulo-display').innerText.replace(/\s+/g, '_').toLowerCase();
+            
+            html2canvas(cartao, {
+                backgroundColor: '#111',
+                scale: 2 
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `${nomeArquivo}.png`; 
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>
