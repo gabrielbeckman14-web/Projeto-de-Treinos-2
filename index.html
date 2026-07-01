@@ -173,7 +173,6 @@
     <button id="btn-gerar" onclick="gerarImagem()">📸 Salvar como Foto</button>
 
     <script>
-        // --- BANCO DE DADOS DE EXERCÍCIOS (EM MEMÓRIA) ---
         let bancoDeExercicios = {
             "Peito": ["Supino Reto", "Supino Inclinado", "Crucifixo"],
             "Costas": ["Puxada Alta", "Remada Baixa", "Levantamento Terra"],
@@ -184,12 +183,36 @@
 
         let listaTreino = [];
 
-        // Carrega as opções assim que a página abre
+        // --- SISTEMA DE CONTROLE DE ACESSO (MÉTODO 1) ---
         window.onload = function() {
+            const parametros = new URLSearchParams(window.location.search);
+            const chaveAluno = parametros.get('id');
+
+            // ESTA É A SUA LISTA DE ALUNOS ATIVOS:
+            // Você pode alterar, adicionar ou remover linhas aqui direto no GitHub
+            const alunosAutorizados = {
+                "aluno01": "cristian",
+            };
+
+            // Se o link não tiver o '?id=' ou o ID não estiver na lista, bloqueia a tela
+            if (!chaveAluno || !alunosAutorizados[chaveAluno]) {
+                document.body.innerHTML = `
+                    <div style="text-align:center; padding:80px 20px; font-family:Arial, sans-serif; color:#dc3545; background:#fff; height:100vh; box-sizing:border-box;">
+                        <h2 style="font-size: 28px; margin-bottom: 10px;">⚠️ Acesso Não Autorizado</h2>
+                        <p style="color: #666; font-size: 16px; line-height: 1.5;">
+                            Este link de treino está inativo ou você não tem permissão de acesso.<br>
+                            Entre em contato com o seu instrutor para receber um link válido.
+                        </p>
+                    </div>
+                `;
+                return; // Trava o aplicativo aqui
+            }
+
+            // Se o ID for válido, o app continua e carrega o menu normalmente
             carregarOpcoesNoSelect();
         };
 
-        // --- FUNÇÕES DO MENU DE EXERCÍCIOS ---
+        // --- RESTANTE DAS FUNÇÕES DO APP ---
         function carregarOpcoesNoSelect() {
             const select = document.getElementById('nome-exercicio');
             select.innerHTML = '<option value="">Selecione o exercício...</option>';
@@ -237,7 +260,6 @@
             document.getElementById('nome-exercicio').value = nome;
         }
 
-        // --- FUNÇÕES DO TREINO E INTERFACE ---
         function atualizarTitulo() {
             const textoDigitado = document.getElementById('input-titulo').value;
             const tituloDisplay = document.getElementById('titulo-display');
@@ -260,7 +282,6 @@
                 return;
             }
 
-            // Captura o grupo muscular baseado no optgroup selecionado
             const grupoMuscular = selectBox.options[selectBox.selectedIndex].parentNode.label || 'Outros';
 
             const novoExercicio = {
@@ -302,25 +323,20 @@
             let grupoAtual = ''; 
 
             listaTreino.forEach((exercicio, index) => {
-                
-                // Cria o subtítulo divisor se o grupo muscular mudar
                 if (exercicio.grupo !== grupoAtual) {
                     const tituloGrupo = document.createElement('h4');
                     tituloGrupo.innerText = `⚡ ${exercicio.grupo.toUpperCase()}`;
-                    
                     tituloGrupo.style.color = '#007bff'; 
                     tituloGrupo.style.borderBottom = '1px dashed #333';
                     tituloGrupo.style.margin = '20px 0 5px 0';
                     tituloGrupo.style.paddingBottom = '5px';
                     tituloGrupo.style.letterSpacing = '1px';
-                    
                     container.appendChild(tituloGrupo);
                     grupoAtual = exercicio.grupo;
                 }
 
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'exercicio-item';
-
                 itemDiv.innerHTML = `
                     <div class="info-exercicio">
                         <strong>${exercicio.nome}</strong>
@@ -336,57 +352,48 @@
             });
         }
 
-        // --- GERAÇÃO DA FOTO ADAPTADA PARA PC E CELULAR ---
-function gerarImagem() {
-    if (listaTreino.length === 0) {
-        alert('Adicione pelo menos um exercício antes de gerar a foto.');
-        return;
-    }
+        function gerarImagem() {
+            if (listaTreino.length === 0) {
+                alert('Adicione pelo menos um exercício antes de gerar a foto.');
+                return;
+            }
 
-    const cartao = document.getElementById('cartao-treino');
-    const nomeArquivo = document.getElementById('titulo-display').innerText.replace(/\s+/g, '_').toLowerCase();
-    
-    html2canvas(cartao, {
-        backgroundColor: '#111',
-        scale: 2 
-    }).then(canvas => {
-        const imagemUrl = canvas.toDataURL('image/png');
-        
-        // 1. Tentativa de download automático (Funciona direto no PC e alguns navegadores mobile)
-        const link = document.createElement('a');
-        link.download = `${nomeArquivo}.png`; 
-        link.href = imagemUrl;
-        link.click();
+            const cartao = document.getElementById('cartao-treino');
+            const nomeArquivo = document.getElementById('titulo-display').innerText.replace(/\s+/g, '_').toLowerCase();
+            
+            html2canvas(cartao, {
+                backgroundColor: '#111',
+                scale: 2 
+            }).then(canvas => {
+                const imagemUrl = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `${nomeArquivo}.png`; 
+                link.href = imagemUrl;
+                link.click();
 
-        // 2. SOLUÇÃO PARA CELULAR: Cria uma área de preview abaixo do botão
-        let areaPreview = document.getElementById('preview-foto');
-        
-        // Se a área ainda não existir na tela, o JavaScript cria ela agora
-        if (!areaPreview) {
-            areaPreview = document.createElement('div');
-            areaPreview.id = 'preview-foto';
-            areaPreview.style.marginTop = '25px';
-            areaPreview.style.textAlign = 'center';
-            areaPreview.style.background = '#fff';
-            areaPreview.style.padding = '15px';
-            areaPreview.style.borderRadius = '8px';
-            areaPreview.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-            document.body.appendChild(areaPreview);
+                let areaPreview = document.getElementById('preview-foto');
+                if (!areaPreview) {
+                    areaPreview = document.createElement('div');
+                    areaPreview.id = 'preview-foto';
+                    areaPreview.style.marginTop = '25px';
+                    areaPreview.style.textAlign = 'center';
+                    areaPreview.style.background = '#fff';
+                    areaPreview.style.padding = '15px';
+                    areaPreview.style.borderRadius = '8px';
+                    areaPreview.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                    document.body.appendChild(areaPreview);
+                }
+                
+                areaPreview.innerHTML = `
+                    <p style="color: #28a745; font-weight: bold; margin-top: 0; font-size: 16px;">📸 Ficha de Treino Gerada!</p>
+                    <p style="color: #444; font-size: 14px; margin-bottom: 12px; line-height: 1.4;">
+                        Se a foto não foi para a sua galeria automaticamente, <strong>pressione e segure o dedo na imagem abaixo</strong> e escolha a opção <strong>"Salvar Imagem"</strong>.
+                    </p>
+                    <img src="${imagemUrl}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid #ddd;">
+                `;
+                areaPreview.scrollIntoView({ behavior: 'smooth' });
+            });
         }
-        
-        // Coloca o texto explicativo e a imagem real para o usuário tocar e segurar
-        areaPreview.innerHTML = `
-            <p style="color: #28a745; font-weight: bold; margin-top: 0; font-size: 16px;">📸 Ficha de Treino Gerada!</p>
-            <p style="color: #444; font-size: 14px; margin-bottom: 12px; line-height: 1.4;">
-                Se a foto não foi para a sua galeria automaticamente, <strong>pressione e segure o dedo na imagem abaixo</strong> e escolha a opção <strong>"Salvar Imagem"</strong> ou <strong>"Fazer download da imagem"</strong>.
-            </p>
-            <img src="${imagemUrl}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid #ddd;">
-        `;
-        
-        // Faz a tela rolar suavemente para baixo para mostrar a foto gerada
-        areaPreview.scrollIntoView({ behavior: 'smooth' });
-    });
-}
     </script>
 </body>
 </html>
