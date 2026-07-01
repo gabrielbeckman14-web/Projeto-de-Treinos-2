@@ -336,26 +336,57 @@
             });
         }
 
-        // --- GERAÇÃO DA FOTO ---
-        function gerarImagem() {
-            if (listaTreino.length === 0) {
-                alert('Adicione pelo menos um exercício antes de gerar a foto.');
-                return;
-            }
+        // --- GERAÇÃO DA FOTO ADAPTADA PARA PC E CELULAR ---
+function gerarImagem() {
+    if (listaTreino.length === 0) {
+        alert('Adicione pelo menos um exercício antes de gerar a foto.');
+        return;
+    }
 
-            const cartao = document.getElementById('cartao-treino');
-            const nomeArquivo = document.getElementById('titulo-display').innerText.replace(/\s+/g, '_').toLowerCase();
-            
-            html2canvas(cartao, {
-                backgroundColor: '#111',
-                scale: 2 
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `${nomeArquivo}.png`; 
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            });
+    const cartao = document.getElementById('cartao-treino');
+    const nomeArquivo = document.getElementById('titulo-display').innerText.replace(/\s+/g, '_').toLowerCase();
+    
+    html2canvas(cartao, {
+        backgroundColor: '#111',
+        scale: 2 
+    }).then(canvas => {
+        const imagemUrl = canvas.toDataURL('image/png');
+        
+        // 1. Tentativa de download automático (Funciona direto no PC e alguns navegadores mobile)
+        const link = document.createElement('a');
+        link.download = `${nomeArquivo}.png`; 
+        link.href = imagemUrl;
+        link.click();
+
+        // 2. SOLUÇÃO PARA CELULAR: Cria uma área de preview abaixo do botão
+        let areaPreview = document.getElementById('preview-foto');
+        
+        // Se a área ainda não existir na tela, o JavaScript cria ela agora
+        if (!areaPreview) {
+            areaPreview = document.createElement('div');
+            areaPreview.id = 'preview-foto';
+            areaPreview.style.marginTop = '25px';
+            areaPreview.style.textAlign = 'center';
+            areaPreview.style.background = '#fff';
+            areaPreview.style.padding = '15px';
+            areaPreview.style.borderRadius = '8px';
+            areaPreview.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+            document.body.appendChild(areaPreview);
         }
+        
+        // Coloca o texto explicativo e a imagem real para o usuário tocar e segurar
+        areaPreview.innerHTML = `
+            <p style="color: #28a745; font-weight: bold; margin-top: 0; font-size: 16px;">📸 Ficha de Treino Gerada!</p>
+            <p style="color: #444; font-size: 14px; margin-bottom: 12px; line-height: 1.4;">
+                Se a foto não foi para a sua galeria automaticamente, <strong>pressione e segure o dedo na imagem abaixo</strong> e escolha a opção <strong>"Salvar Imagem"</strong> ou <strong>"Fazer download da imagem"</strong>.
+            </p>
+            <img src="${imagemUrl}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid #ddd;">
+        `;
+        
+        // Faz a tela rolar suavemente para baixo para mostrar a foto gerada
+        areaPreview.scrollIntoView({ behavior: 'smooth' });
+    });
+}
     </script>
 </body>
 </html>
