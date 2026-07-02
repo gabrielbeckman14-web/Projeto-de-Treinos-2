@@ -68,12 +68,25 @@
         .titulo-treino {
             text-align: center;
             margin-top: 0;
+            margin-bottom: 8px; /* Reduzido para dar espaço ao nome do aluno */
             color: #00ff88; 
-            border-bottom: 2px solid #222;
-            padding-bottom: 15px;
             text-transform: uppercase;
             letter-spacing: 1px;
             word-wrap: break-word;
+        }
+
+        /* NOVO: Estilo para o nome do aluno no cartão */
+        .aluno-badge {
+            text-align: center;
+            color: #aaa;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #222;
+            padding-bottom: 15px;
         }
 
         .exercicio-item { 
@@ -166,6 +179,9 @@
     <h3>Visualização do Treino</h3>
     <div id="cartao-treino">
         <h2 class="titulo-treino" id="titulo-display">Treino do Dia</h2>
+        
+        <div class="aluno-badge" id="aluno-display">Carregando...</div>
+        
         <div id="lista-exercicios">
             </div>
     </div>
@@ -183,18 +199,16 @@
 
         let listaTreino = [];
 
-        // --- SISTEMA DE CONTROLE DE ACESSO (MÉTODO 1) ---
+        // --- SISTEMA DE CONTROLE DE ACESSO COM IMPACTO VISUAL ---
         window.onload = function() {
             const parametros = new URLSearchParams(window.location.search);
             const chaveAluno = parametros.get('id');
 
-            // ESTA É A SUA LISTA DE ALUNOS ATIVOS:
-            // Você pode alterar, adicionar ou remover linhas aqui direto no GitHub
+            // LISTA DE ALUNOS ATIVOS
             const alunosAutorizados = {
-                "cristian01": "cristian",
+                "cristian01": "cristian"
             };
 
-            // Se o link não tiver o '?id=' ou o ID não estiver na lista, bloqueia a tela
             if (!chaveAluno || !alunosAutorizados[chaveAluno]) {
                 document.body.innerHTML = `
                     <div style="text-align:center; padding:80px 20px; font-family:Arial, sans-serif; color:#dc3545; background:#fff; height:100vh; box-sizing:border-box;">
@@ -205,10 +219,12 @@
                         </p>
                     </div>
                 `;
-                return; // Trava o aplicativo aqui
+                return; 
             }
 
-            // Se o ID for válido, o app continua e carrega o menu normalmente
+            // NOVO: Insere o nome do aluno dinamicamente no cartão de foto
+            document.getElementById('aluno-display').innerText = `👤 Aluno(a): ${alunosAutorizados[chaveAluno]}`;
+
             carregarOpcoesNoSelect();
         };
 
