@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organizador de Treino - Pro</title>
+    <title>Gerador de Treinos Profissional - Personal Trainer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
@@ -26,10 +26,10 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        .grupo-titulo {
-            margin-bottom: 10px;
-            border-bottom: 2px dashed #ccc;
-            padding-bottom: 15px;
+        .grupo-inputs {
+            margin-bottom: 5px;
+            border-bottom: 2px dashed #eee;
+            padding-bottom: 12px;
         }
         
         input, select, button { 
@@ -41,10 +41,16 @@
             width: 100%;
         }
 
-        input#input-titulo {
+        input#input-titulo, input#input-aluno {
             border: 2px solid #007bff;
             font-weight: bold;
             color: #333;
+            margin-top: 4px;
+        }
+
+        /* Cor diferente para o campo do aluno para o Personal não confundir */
+        input#input-aluno {
+            border: 2px solid #dc3545; 
         }
 
         button.add-btn {
@@ -68,25 +74,36 @@
         .titulo-treino {
             text-align: center;
             margin-top: 0;
-            margin-bottom: 8px; /* Reduzido para dar espaço ao nome do aluno */
+            margin-bottom: 5px;
             color: #00ff88; 
             text-transform: uppercase;
             letter-spacing: 1px;
             word-wrap: break-word;
         }
 
-        /* NOVO: Estilo para o nome do aluno no cartão */
         .aluno-badge {
             text-align: center;
-            color: #aaa;
+            color: #fff;
             margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 14px;
+            margin-bottom: 5px;
+            font-size: 15px;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+        }
+
+        /* Assinatura fixa do Personal Trainer no cartão */
+        .personal-assinatura {
+            text-align: center;
+            color: #888;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             border-bottom: 2px solid #222;
-            padding-bottom: 15px;
+            padding-bottom: 12px;
         }
 
         .exercicio-item { 
@@ -145,19 +162,24 @@
 </head>
 <body>
 
-    <h3>Montar Treino</h3>
+    <h3>Painel de Consultoria</h3>
     <div class="formulario">
         
-        <div class="grupo-titulo">
-            <label for="input-titulo" style="font-size: 14px; color: #555; font-weight: bold;">Título do Treino:</label>
-            <input type="text" id="input-titulo" value="Treino do Dia" oninput="atualizarTitulo()" placeholder="Ex: Treino A - Peito e Tríceps">
+        <div class="grupo-inputs">
+            <label style="font-size: 14px; color: #555; font-weight: bold;">Identificação do Treino:</label>
+            <input type="text" id="input-titulo" value="Treino A" oninput="atualizarTitulo()" placeholder="Ex: Treino A - Peito e Tríceps">
+        </div>
+
+        <div class="grupo-inputs">
+            <label style="font-size: 14px; color: #555; font-weight: bold;">Nome do Aluno:</label>
+            <input type="text" id="input-aluno" value="" oninput="atualizarAluno()" placeholder="Ex: João Silva">
         </div>
 
         <select id="nome-exercicio">
             <option value="">Selecione o exercício...</option>
         </select>
         
-        <button class="btn-controle" style="background-color: #555; margin-top: -5px; margin-bottom: 10px; width: 100%;" onclick="mostrarEsconderCadastro()">+ Criar Novo Exercício</button>
+        <button class="btn-controle" style="background-color: #555; margin-top: -5px; margin-bottom: 10px; width: 100%;" onclick="mostrarEsconderCadastro()">+ Cadastrar Novo Exercício no Menu</button>
         
         <div id="area-cadastro-exercicio" style="display: none; background: #eee; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
             <input type="text" id="novo-ex-nome" placeholder="Nome do Exercício (Ex: Voador)" style="margin-bottom: 8px;">
@@ -173,20 +195,22 @@
         
         <input type="text" id="series" placeholder="Séries x Repetições (ex: 4x 10)">
         <input type="text" id="carga" placeholder="Carga/Peso (ex: 60kg)">
-        <button class="add-btn" onclick="adicionarAoTreino()">+ Adicionar Exercício ao Treino</button>
+        <button class="add-btn" onclick="adicionarAoTreino()">+ Adicionar Exercício à Ficha</button>
     </div>
 
-    <h3>Visualização do Treino</h3>
+    <h3>Visualização do Cartão</h3>
     <div id="cartao-treino">
-        <h2 class="titulo-treino" id="titulo-display">Treino do Dia</h2>
+        <h2 class="titulo-treino" id="titulo-display">Treino A</h2>
         
-        <div class="aluno-badge" id="aluno-display">Carregando...</div>
+        <div class="aluno-badge" id="aluno-display">Aluno(a): [Defina o Aluno]</div>
+        
+        <div class="personal-assinatura" id="personal-display">Consultoria Esportiva</div>
         
         <div id="lista-exercicios">
             </div>
     </div>
 
-    <button id="btn-gerar" onclick="gerarImagem()">📸 Salvar como Foto</button>
+    <button id="btn-gerar" onclick="gerarImagem()">📸 Gerar Imagem do Treino</button>
 
     <script>
         let bancoDeExercicios = {
@@ -198,37 +222,55 @@
         };
 
         let listaTreino = [];
+        let nomePersonalLogado = "";
 
-        // --- SISTEMA DE CONTROLE DE ACESSO COM IMPACTO VISUAL ---
+        // --- CONTROLE DE ACESSO DOS PERSONAIS ---
         window.onload = function() {
             const parametros = new URLSearchParams(window.location.search);
-            const chaveAluno = parametros.get('id');
+            const chavePersonal = parametros.get('id');
 
-            // LISTA DE ALUNOS ATIVOS
-            const alunosAutorizados = {
-                "cristian01": "cristian"
+            // SEU PAINEL DE VENDAS MANUAL:
+            // Cadastre aqui os Personal Trainers que te pagaram os R$ 100,00
+            const personaisAutorizados = {
+                "cristian01": "Prof. Cristan",
             };
 
-            if (!chaveAluno || !alunosAutorizados[chaveAluno]) {
+            if (!chavePersonal || !personaisAutorizados[chavePersonal]) {
                 document.body.innerHTML = `
                     <div style="text-align:center; padding:80px 20px; font-family:Arial, sans-serif; color:#dc3545; background:#fff; height:100vh; box-sizing:border-box;">
-                        <h2 style="font-size: 28px; margin-bottom: 10px;">⚠️ Acesso Não Autorizado</h2>
+                        <h2 style="font-size: 28px; margin-bottom: 10px;">⚠️ Sistema Bloqueado</h2>
                         <p style="color: #666; font-size: 16px; line-height: 1.5;">
-                            Este link de treino está inativo ou você não tem permissão de acesso.<br>
-                            Entre em contato com o seu instrutor para receber um link válido.
+                            Esta licença de uso do Gerador de Treinos expirou ou não é válida.<br>
+                            Renove sua assinatura com o administrador do software.
                         </p>
                     </div>
                 `;
                 return; 
             }
 
-            // NOVO: Insere o nome do aluno dinamicamente no cartão de foto
-            document.getElementById('aluno-display').innerText = `👤 Profissional: ${alunosAutorizados[chaveAluno]}`;
+            // Define e exibe a assinatura do Personal de forma fixa no cartão
+            nomePersonalLogado = personaisAutorizados[chavePersonal];
+            document.getElementById('personal-display').innerText = `⚡ MENTORIA: ${nomePersonalLogado}`;
 
+            // Inicializa as visualizações básicas
+            atualizarAluno();
             carregarOpcoesNoSelect();
         };
 
-        // --- RESTANTE DAS FUNÇÕES DO APP ---
+        // --- ATUALIZAÇÕES EM TEMPO REAL ---
+        function atualizarTitulo() {
+            const textoDigitado = document.getElementById('input-titulo').value;
+            const tituloDisplay = document.getElementById('titulo-display');
+            tituloDisplay.innerText = textoDigitado.trim() === '' ? 'TREINO' : textoDigitado;
+        }
+
+        function atualizarAluno() {
+            const textoDigitado = document.getElementById('input-aluno').value;
+            const alunoDisplay = document.getElementById('aluno-display');
+            alunoDisplay.innerText = textoDigitado.trim() === '' ? 'ALUNO(A): [DEFINA O ALUNO]' : `ALUNO(A): ${textoDigitado}`;
+        }
+
+        // --- SISTEMA DE SELEÇÃO E GERENCIAMENTO ---
         function carregarOpcoesNoSelect() {
             const select = document.getElementById('nome-exercicio');
             select.innerHTML = '<option value="">Selecione o exercício...</option>';
@@ -252,11 +294,7 @@
 
         function mostrarEsconderCadastro() {
             const area = document.getElementById('area-cadastro-exercicio');
-            if (area.style.display === 'none') {
-                area.style.display = 'block';
-            } else {
-                area.style.display = 'none';
-            }
+            area.style.display = area.style.display === 'none' ? 'block' : 'none';
         }
 
         function salvarNovoExercicio() {
@@ -274,17 +312,6 @@
             document.getElementById('novo-ex-nome').value = '';
             mostrarEsconderCadastro();
             document.getElementById('nome-exercicio').value = nome;
-        }
-
-        function atualizarTitulo() {
-            const textoDigitado = document.getElementById('input-titulo').value;
-            const tituloDisplay = document.getElementById('titulo-display');
-            
-            if(textoDigitado.trim() === '') {
-                tituloDisplay.innerText = 'TREINO SEM NOME';
-            } else {
-                tituloDisplay.innerText = textoDigitado;
-            }
         }
 
         function adicionarAoTreino() {
@@ -375,7 +402,8 @@
             }
 
             const cartao = document.getElementById('cartao-treino');
-            const nomeArquivo = document.getElementById('titulo-display').innerText.replace(/\s+/g, '_').toLowerCase();
+            const nomeAlunoSanitizado = document.getElementById('input-aluno').value.replace(/\s+/g, '_').toLowerCase() || 'treino';
+            const nomeFicha = document.getElementById('input-titulo').value.replace(/\s+/g, '_').toLowerCase();
             
             html2canvas(cartao, {
                 backgroundColor: '#111',
@@ -383,7 +411,7 @@
             }).then(canvas => {
                 const imagemUrl = canvas.toDataURL('image/png');
                 const link = document.createElement('a');
-                link.download = `${nomeArquivo}.png`; 
+                link.download = `treino_${nomeAlunoSanitizado}_${nomeFicha}.png`; 
                 link.href = imagemUrl;
                 link.click();
 
@@ -401,9 +429,9 @@
                 }
                 
                 areaPreview.innerHTML = `
-                    <p style="color: #28a745; font-weight: bold; margin-top: 0; font-size: 16px;">📸 Ficha de Treino Gerada!</p>
+                    <p style="color: #28a745; font-weight: bold; margin-top: 0; font-size: 16px;">📸 Imagem do Treino Criada!</p>
                     <p style="color: #444; font-size: 14px; margin-bottom: 12px; line-height: 1.4;">
-                        Se a foto não foi para a sua galeria automaticamente, <strong>pressione e segure o dedo na imagem abaixo</strong> e escolha a opção <strong>"Salvar Imagem"</strong>.
+                        Se o download não iniciou automaticamente no celular, <strong>toque e segure na imagem abaixo</strong> para salvá-la em sua galeria.
                     </p>
                     <img src="${imagemUrl}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid #ddd;">
                 `;
